@@ -16,19 +16,26 @@
 </head>
 <body class="bg-gray-900 h-screen">
 
+    <!-- Loading / Processing Overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
+        <div class="text-center">
+            <svg class="animate-spin h-10 w-10 text-white mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <p class="text-white mt-4">Processing login...</p>
+        </div>
+    </div>
+
     <!-- Login Overlay -->
     <div id="login-overlay" class="hidden fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
         <div class="w-full max-w-sm p-8 rounded-lg shadow-xl bg-blue-600">
-            <h2 class="text-2xl font-bold text-center text-white mb-2">San Andreas Department of Emergency Communications v2</h2>
+            <h2 class="text-2xl font-bold text-center text-white mb-2">San Andreas Department of Emergency Communications v3</h2>
             <p class="text-center text-gray-200 text-sm mb-6">Encrypted Email System</p>
             <div class="space-y-4">
                  <button id="discord-login-btn" class="w-full text-white font-semibold py-3 rounded-md shadow transition flex items-center justify-center space-x-3" style="background-color: #5865F2;" onmouseover="this.style.backgroundColor='#4a54d4'" onmouseout="this.style.backgroundColor='#5865F2'">
                     <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M20.283 3.003s-.494-.14-1.252.192c-1.18.47-2.22,1.21-3.045,1.862-1.385-.43-2.88-.65-4.385-.65-1.506,0-2.998.22-4.384.65C6.39 5.245 5.35 4.505 4.17 4.033c-.808-.34-1.3-.22-1.3-.22s-.363.35-.62.82c-1.32,2.44-1.803,5.05-1.73,7.63.26,9.45,7.16,11.37,7.16,11.37s1.17-.5,2.06-1.22c-2.26-1.1-3.25-2.65-3.66-4.04H9.6c-.05,0-.1-.04-.1-.1s0-.1.1-.1h.1c.05,0,.1.04.1.1s0,.1-.1.1h3.36c-.49,1.58-1.79,2.94-3.66,4.04,1.03.8,2.06,1.22,2.06,1.22s6.9-1.92,7.16-11.37c.07-2.58-.41-5.19-1.73-7.63-.257-.47-.62-.82-.62-.82zM8.82,14.28c-.88,0-1.59-.72-1.59-1.6s.71-1.6,1.59-1.6c.88,0,1.59.72,1.59,1.6s-.71,1.6-1.59,1.6zm6.36,0c-.88,0-1.59-.72-1.59-1.6s.71-1.6,1.59-1.6c.88,0,1.59.72,1.59,1.6s-.71,1.6-1.59,1.6z"/></svg>
                     <span>Sign In With Discord</span>
                 </button>
-                <p id="login-error" class="text-yellow-300 text-center text-sm h-4"></p>
             </div>
-             <p class="text-center text-gray-300 text-xs mt-6">This system is for authorized personnel only. By signing in, you agree to all security protocols.</p>
+             <p class="text-center text-gray-300 text-xs mt-6">This system is for authorized personnel only.</p>
         </div>
     </div>
     
@@ -42,228 +49,171 @@
                     <input type="text" id="create-email-input" class="w-full p-3 border border-blue-500 bg-blue-500 text-white rounded-l-md focus:outline-none focus:ring-2 focus:ring-white placeholder-gray-300" placeholder="choose.a.username">
                     <span class="p-3 bg-blue-700 text-gray-200 rounded-r-md">@sadec.sa.gov</span>
                 </div>
-                <input type="hidden" id="discord-id-input">
+                <input type="hidden" id="reg-token-input">
                 <button id="create-account-btn" class="w-full text-white font-semibold py-3 rounded-md shadow transition" style="background-color: #02133e;" onmouseover="this.style.backgroundColor='#031a54'" onmouseout="this.style.backgroundColor='#02133e'">Create Account and Sign In</button>
                 <p id="create-error" class="text-yellow-300 text-center text-sm h-4"></p>
             </div>
         </div>
     </div>
 
-    <!-- Main Application (This structure is a template, it will be populated by JavaScript) -->
+    <!-- Main Application (Populated by JS) -->
     <div id="main-app" class="w-full h-full bg-gray-800 text-gray-200 flex-col hidden"></div>
 
-    <!-- All Modals will be populated by JavaScript -->
+    <!-- Modals (Populated by JS) -->
     <div id="compose-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"></div>
     <div id="error-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"></div>
     <div id="delete-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"></div>
 
     <script>
-    // --- STEP 3: AFTER DEPLOYING, PASTE THE WEB APP URL HERE ---
-    const googleSheetWebAppUrl = 'https://script.google.com/macros/s/AKfycbxpYvN4Uf2batA7s2d4RxkmQ9vf2sH_4mr2sGZVLmIiy5qjkJvgsojv_SUx0-jO1xc/exec';
+    // --- STEP 3: PASTE YOUR WEB APP URL HERE ---
+    const googleSheetWebAppUrl = 'https://script.google.com/macros/s/AKfycbyVfrPLdWYOdnZT9LvkAw_Wrfs--Q4cNQS6LdAP4oVNE82Vb0XLEadrtzX0MAuC6CCk/exec';
     
     // --- DO NOT EDIT BELOW THIS LINE ---
-    const requiredDomain = "@sadec.sa.gov";
-    const groupEmails = ["employees@sadec.sa.gov", "executives@sadec.sa.gov", "supervisors@sadec.sa.gov"];
-    const securityDisclaimer = `\n\n---\nThis message contains information at the highest security level and is intended for the designated recipient(s) only. Unauthorized access or mishandling of this data constitutes a severe security breach.\n\nDO NOT forward, print, or copy this email.\nDO NOT discuss its contents outside of a secure, authorized environment.\nDO NOT save this information on any unsecured or personal device.\nViolation of these protocols will trigger an immediate security investigation and will be pursued to the fullest extent of the law. If received in error, notify the SADEC Security Division immediately and delete this message permanently.`;
-
+    
     // --- DOM ELEMENTS ---
+    const loadingOverlay = document.getElementById('loading-overlay');
     const loginOverlay = document.getElementById('login-overlay');
-    const discordLoginBtn = document.getElementById('discord-login-btn');
-    const loginError = document.getElementById('login-error');
     const createAccountOverlay = document.getElementById('create-account-overlay');
-    const discordUsernameDisplay = document.getElementById('discord-username-display');
-    const createEmailInput = document.getElementById('create-email-input');
-    const createAccountBtn = document.getElementById('create-account-btn');
-    const createError = document.getElementById('create-error');
-    const discordIdInput = document.getElementById('discord-id-input');
     const mainApp = document.getElementById('main-app');
-
-    // --- STATE ---
-    let currentSelectedEmailItem = null;
-    let currentlyOpenEmail = null;
-    let emailToDelete = null;
-
+    
     // --- AUTHENTICATION & PAGE LOAD ---
     
     function loginWithDiscord() {
-        loginError.textContent = 'Waiting for Discord login...';
-        fetch(`${googleSheetWebAppUrl}?action=getDiscordAuthUrl`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success' && data.url) {
-                    // Open the login URL in a new popup window
-                    window.open(data.url, 'discordLogin', 'width=500,height=800');
-                } else {
-                    showError('Could not get Discord login URL.');
-                    loginError.textContent = '';
-                }
-            })
-            .catch(err => {
-                showError('Error contacting server for Discord login.');
-                loginError.textContent = '';
-            });
+        // Redirect the whole page to the login endpoint of the script
+        window.location.href = `${googleSheetWebAppUrl}?action=login`;
     }
 
     function logout() {
         localStorage.removeItem('sadecUserEmail');
-        location.reload();
+        location.href = location.pathname; // Reload page without params
     }
-    
-    function handlePageLoad() {
-        const userEmail = localStorage.getItem('sadecUserEmail');
-        if (userEmail) {
-            loginOverlay.classList.add('hidden');
-            createAccountOverlay.classList.add('hidden');
-            mainApp.classList.remove('hidden');
-            mainApp.classList.add('flex');
-            renderFullAppUI(userEmail); // Build the entire UI
-            fetchMessages();
+
+    async function handlePageLoad() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const regToken = urlParams.get('regToken');
+        const discordUsername = urlParams.get('discordUsername');
+
+        // Clean the URL to remove the tokens
+        if (token || regToken) {
+            history.replaceState(null, '', window.location.pathname);
+        }
+
+        if (token) {
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.classList.add('flex');
+            await exchangeTokenForEmail(token);
+        } else if (regToken) {
+            showRegistrationScreen(regToken, discordUsername);
         } else {
-            loginOverlay.classList.remove('hidden');
-            loginOverlay.classList.add('flex');
+            const userEmail = localStorage.getItem('sadecUserEmail');
+            if (userEmail) {
+                showMainApp(userEmail);
+            } else {
+                loginOverlay.classList.remove('hidden');
+                loginOverlay.classList.add('flex');
+            }
         }
     }
-    
-    function showRegistrationScreen(discordId, discordUsername) {
-        loginOverlay.classList.add('hidden');
+
+    async function exchangeTokenForEmail(token) {
+        try {
+            const response = await fetch(googleSheetWebAppUrl, {
+                method: 'POST',
+                mode: 'cors', // Required for cross-origin requests
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'exchangeToken', token: token })
+            });
+            const data = await response.json();
+            if (data.status === 'success' && data.email) {
+                localStorage.setItem('sadecUserEmail', data.email);
+                showMainApp(data.email);
+            } else {
+                alert(`Login failed: ${data.message}`);
+                showLoginScreen();
+            }
+        } catch (error) {
+            console.error("Token exchange error:", error);
+            alert('An error occurred during login. Please try again.');
+            showLoginScreen();
+        }
+    }
+
+    function showRegistrationScreen(regToken, discordUsername) {
         createAccountOverlay.classList.remove('hidden');
         createAccountOverlay.classList.add('flex');
-        discordIdInput.value = discordId;
-        discordUsernameDisplay.textContent = discordUsername;
-        createEmailInput.focus();
+        document.getElementById('reg-token-input').value = regToken;
+        document.getElementById('discord-username-display').textContent = discordUsername || 'User';
+        document.getElementById('create-email-input').focus();
     }
     
     async function createAccount() {
-        const chosenUsername = createEmailInput.value.trim();
-        const discordId = discordIdInput.value;
-        const discordUsername = discordUsernameDisplay.textContent;
+        const createBtn = document.getElementById('create-account-btn');
+        const createError = document.getElementById('create-error');
+        const chosenUsername = document.getElementById('create-email-input').value.trim();
+        const regToken = document.getElementById('reg-token-input').value;
 
         if (!chosenUsername) {
             createError.textContent = "Please enter a desired username.";
             return;
         }
 
-        createAccountBtn.disabled = true;
-        createAccountBtn.textContent = 'Creating...';
+        createBtn.disabled = true;
+        createBtn.textContent = 'Creating...';
         createError.textContent = '';
 
         try {
             const response = await fetch(googleSheetWebAppUrl, {
                 method: 'POST',
+                mode: 'cors',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'createSadecEmail', discordId, discordUsername, chosenUsername })
+                body: JSON.stringify({ action: 'createSadecEmail', regToken, chosenUsername })
             });
             const data = await response.json();
 
-            if (data.status === 'success') {
-                localStorage.setItem('sadecUserEmail', data.sadecEmail);
-                location.reload(); // Reload the page to log in
+            if (data.status === 'success' && data.token) {
+                // Account created, now log in with the final token
+                await exchangeTokenForEmail(data.token);
             } else {
                 createError.textContent = data.message || "An unknown error occurred.";
             }
         } catch (error) {
             createError.textContent = "Could not contact server. Please try again later.";
         } finally {
-            createAccountBtn.disabled = false;
-            createAccountBtn.textContent = 'Create Account and Sign In';
+            createBtn.disabled = false;
+            createBtn.textContent = 'Create Account and Sign In';
         }
     }
 
-    // --- UI RENDERING ---
-    
-    function renderFullAppUI(userEmail) {
-        mainApp.innerHTML = `
-            <header class="bg-[#0078d4] text-white p-2 flex justify-between items-center flex-shrink-0">
-                <div class="flex items-center space-x-4"><img src="https://media.discordapp.net/attachments/1317645191431196742/1318124483529146408/CSRP_SADEC_Logo_Transparent.png?ex=688dc496&is=688c7316&hm=ab1a9d3d92fd5f67d100e41545dc8d7f97379c4d48238475e890cd35c2e537ee&=&format=webp&quality=lossless&width=960&height=960" alt="SADEC Logo" class="w-8 h-8"><h1 class="text-base font-semibold">SADEC Encrypted Email System</h1></div>
-                <div class="flex items-center space-x-2 flex-shrink-0"><span class="text-sm">Logged In As:</span><input type="email" id="employeeEmailInput" class="p-1 rounded bg-[#005a9e] text-white text-xs w-48 placeholder-gray-300" readonly value="${userEmail}"><button id="logout-btn" class="text-xs bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md">Logout</button></div>
-            </header>
-            <div class="flex flex-1 overflow-hidden">
-                <nav class="w-60 p-2 border-r border-gray-700 flex flex-col flex-shrink-0" style="background-color: #02133e;"><button id="new-message-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md shadow hover:bg-blue-700 transition flex items-center justify-center space-x-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg><span>New Message</span></button><ul class="mt-4 space-y-1"><li><button id="show-inbox" class="w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-gray-200 bg-gray-700"><svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0l-8-4-8 4m16 0l-8 4m8-4v-4m-8 4l-8-4"></path></svg><span>Inbox</span></button></li><li><button id="show-sent" class="w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-gray-400 hover:bg-gray-700"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg><span>Sent Items</span></button></li></ul></nav>
-                <div id="email-list-pane" class="w-96 bg-gray-800 border-r border-gray-700 overflow-y-auto flex-shrink-0"><div id="inbox-container"></div><div id="sent-container" class="hidden"></div></div>
-                <div id="reading-pane" class="flex-1 p-6 overflow-y-auto bg-gray-800"><div id="reading-pane-content" class="hidden"><div class="flex justify-between items-start"><h2 id="reading-subject" class="text-2xl font-bold text-gray-100 mb-2"></h2><div class="flex space-x-2 flex-shrink-0"><button id="reply-btn" class="bg-gray-700 text-white font-semibold py-2 px-4 rounded-md shadow hover:bg-gray-600 transition flex items-center space-x-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg><span>Reply</span></button><button id="forward-btn" class="bg-gray-700 text-white font-semibold py-2 px-4 rounded-md shadow hover:bg-gray-600 transition flex items-center space-x-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" transform="scale(-1, 1)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg><span>Forward</span></button></div></div><div class="flex items-center space-x-4 mb-4 mt-4"><div class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg" id="reading-avatar"></div><div><p class="font-semibold text-gray-100" id="reading-from"></p><p class="text-sm text-gray-400">To: <span id="reading-to"></span></p><p id="reading-cc-container" class="text-sm text-gray-400 hidden">Cc: <span id="reading-cc"></span></p></div></div><p class="text-xs text-gray-500 text-right border-b border-gray-700 pb-4 mb-4" id="reading-date"></p><div id="reading-body" class="text-gray-300 leading-relaxed whitespace-pre-wrap"></div></div><div id="reading-pane-placeholder" class="h-full flex flex-col items-center justify-center text-gray-500"><svg class="w-24 h-24 text-gray-700" viewBox="0 0 24 24" fill="currentColor"><path d="M2.002 5.499h12.213l-6.106 4.362-6.107-4.362zm0 1.001v12h20v-12l-10 7.143-10-7.143zm13.215-.001h6.783l-3.392 2.423-3.391-2.423z"/></svg><p class="mt-4 text-lg">Select an item to read</p><p class="text-sm">Nothing is selected</p></div></div>
-            </div>`;
-        
-        document.getElementById('compose-modal').innerHTML = `<div class="bg-gray-800 text-gray-200 rounded-lg shadow-2xl w-full max-w-2xl flex flex-col"><header class="bg-gray-900 p-3 flex justify-between items-center rounded-t-lg border-b border-gray-700"><h3 class="text-lg font-medium">New Message</h3><button id="close-compose-modal" class="text-gray-400 hover:text-white text-2xl">&times;</button></header><div class="p-4 space-y-3"><input type="email" id="recipientId" class="w-full p-2 border border-gray-600 bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="To (comma-separated, or group emails)"><input type="email" id="ccId" class="w-full p-2 border border-gray-600 bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cc (comma-separated)"><input type="text" id="subject-input" class="w-full p-2 border border-gray-600 bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Subject"><textarea id="message-input" class="w-full p-2 border border-gray-600 bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="10" placeholder="Type your message..."></textarea></div><footer class="p-3 bg-gray-900 rounded-b-lg border-t border-gray-700"><button id="send-button" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-md shadow hover:bg-blue-700 transition">Send</button></footer></div>`;
-        document.getElementById('error-modal').innerHTML = `<div class="bg-gray-800 border border-red-500 p-6 rounded-lg shadow-xl text-center"><p id="error-message" class="text-red-400 font-semibold"></p><button id="close-error-modal" class="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Close</button></div>`;
-        document.getElementById('delete-confirm-modal').innerHTML = `<div class="bg-gray-800 text-gray-200 rounded-lg shadow-2xl w-full max-w-md"><div class="p-6"><h3 class="text-lg font-medium text-center">Delete Message</h3><p class="text-center text-gray-400 mt-2">Are you sure you want to permanently delete this message?</p></div><div class="p-4 bg-gray-900 rounded-b-lg flex justify-end space-x-4"><button id="cancel-delete-btn" class="bg-gray-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-gray-700 transition">Cancel</button><button id="confirm-delete-btn" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700 transition">Delete</button></div></div>`;
-        
-        addAppEventListeners();
+    function showMainApp(userEmail) {
+        loadingOverlay.classList.add('hidden');
+        loginOverlay.classList.add('hidden');
+        createAccountOverlay.classList.add('hidden');
+        mainApp.classList.remove('hidden');
+        mainApp.classList.add('flex');
+        renderFullAppUI(userEmail);
+        fetchMessages();
     }
-    
-    // --- EMAIL & APP LOGIC (These functions need to be fully implemented) ---
-    function isValidEmail(email, allowGroups = true) { /* ... */ }
-    function showError(message) { /* ... */ }
-    async function markEmailAsRead(timestamp, element) { /* ... */ }
-    function openEmail(msg, element) { /* ... */ }
-    function clearReadingPane() { /* ... */ }
-    function replyToEmail() { /* ... */ }
-    function forwardEmail() { /* ... */ }
-    function displayMessageInList(msg, container) { /* ... */ }
-    async function performDelete() { /* ... */ }
-    function getEmployeeEmail() { return document.getElementById('employeeEmailInput').value.trim(); }
-    async function fetchMessages() { /* ... */ }
-    async function sendMessage() { /* ... */ }
-    function toggleView(view) { /* ... */ }
+
+    function showLoginScreen() {
+        loadingOverlay.classList.add('hidden');
+        createAccountOverlay.classList.add('hidden');
+        mainApp.classList.add('hidden');
+        loginOverlay.classList.remove('hidden');
+        loginOverlay.classList.add('flex');
+    }
+
+    // --- UI RENDERING & APP LOGIC (These functions need to be fully implemented) ---
+    function renderFullAppUI(userEmail) { /* ... Paste full function from previous steps ... */ }
+    function addAppEventListeners() { /* ... Paste full function from previous steps ... */ }
+    // ... all other app functions ...
 
     // --- EVENT LISTENERS ---
-    function addAppEventListeners() {
-        document.getElementById('logout-btn').addEventListener('click', logout);
-        document.getElementById('new-message-btn').addEventListener('click', () => {
-            const composeModal = document.getElementById('compose-modal');
-            composeModal.querySelector('#recipientId').value = ''; 
-            composeModal.querySelector('#ccId').value = ''; 
-            composeModal.querySelector('#subject-input').value = ''; 
-            composeModal.querySelector('#message-input').value = '';
-            composeModal.classList.remove('hidden');
-        });
-        document.getElementById('close-compose-modal').addEventListener('click', () => document.getElementById('compose-modal').classList.add('hidden'));
-        document.getElementById('send-button').addEventListener('click', sendMessage);
-        document.getElementById('close-error-modal').addEventListener('click', () => document.getElementById('error-modal').classList.add('hidden'));
-        document.getElementById('show-inbox').addEventListener('click', () => toggleView('inbox'));
-        document.getElementById('show-sent').addEventListener('click', () => toggleView('sent'));
-        document.getElementById('reply-btn').addEventListener('click', replyToEmail);
-        document.getElementById('forward-btn').addEventListener('click', forwardEmail);
-        document.getElementById('cancel-delete-btn').addEventListener('click', () => { document.getElementById('delete-confirm-modal').classList.add('hidden'); emailToDelete = null; });
-        document.getElementById('confirm-delete-btn').addEventListener('click', performDelete);
-    }
+    document.getElementById('discord-login-btn').addEventListener('click', loginWithDiscord);
+    document.getElementById('create-account-btn').addEventListener('click', createAccount);
     
-    discordLoginBtn.addEventListener('click', loginWithDiscord);
-    createAccountBtn.addEventListener('click', createAccount);
-
-    // This is the new listener for the popup window
-    window.addEventListener('message', (event) => {
-        // Security: Check if the message is from our script
-        if (event.origin !== "https://script.google.com") {
-            return;
-        }
-
-        try {
-            const data = JSON.parse(event.data);
-            if (data.type === 'sadecLogin') {
-                localStorage.setItem('sadecUserEmail', data.email);
-                location.reload();
-            } else if (data.type === 'sadecRegistration') {
-                showRegistrationScreen(data.info.discordId, data.info.discordUsername);
-            }
-        } catch (e) {
-            console.error("Could not parse message from popup:", e);
-        }
-    });
-
     // --- INITIALIZATION ---
     handlePageLoad();
     </script>
 </body>
 </html>
-```
-
-### **Final Steps: Re-Deploy Your Application**
-
-Because the code has changed, you **must re-deploy** your Google Apps Script project for the new logic to take effect.
-
-1.  **Deploy:** In the Apps Script editor, click **Deploy -> New deployment**. Select **"Web app"**, set access to **"Anyone"**, and click **Deploy**. Copy the new Web app URL.
-2.  **Update Script & HTML:** Paste the new URL into the `SCRIPT_URL` and `googleSheetWebAppUrl` variables in both your `Code.gs` and `SADECEmail.html` files. Save both files.
-3.  **Update Discord:** Go to the Discord Developer Portal, open your application's **OAuth2** page, and make sure the new Web app URL is in the **Redirects** list. Save changes.
-4.  **Re-Deploy (Final Time):** Because you updated the URL variable in the script, you must deploy one last time. Go to **Deploy -> Manage deployments**, edit your active deployment, select **"New version"**, and click **Deploy**.
-
-After following these steps, your application hosted on GitHub Pages will now correctly handle the popup authentication fl
