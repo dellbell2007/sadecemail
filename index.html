@@ -59,7 +59,7 @@
 
     <script>
     // --- STEP 3: AFTER DEPLOYING, PASTE THE WEB APP URL HERE ---
-    const googleSheetWebAppUrl = 'https://script.google.com/macros/s/AKfycbyf7fOcxXFK-S3cDnZN0cfj9K1k0hSyTPwV806TIxoU0eix4LqysF6O_tzeWLfhMtKc/exec';
+    const googleSheetWebAppUrl = 'https://script.google.com/macros/s/AKfycbxpYvN4Uf2batA7s2d4RxkmQ9vf2sH_4mr2sGZVLmIiy5qjkJvgsojv_SUx0-jO1xc/exec';
     
     // --- DO NOT EDIT BELOW THIS LINE ---
     const requiredDomain = "@sadec.sa.gov";
@@ -91,6 +91,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success' && data.url) {
+                    // Open the login URL in a new popup window
                     window.open(data.url, 'discordLogin', 'width=500,height=800');
                 } else {
                     showError('Could not get Discord login URL.');
@@ -189,27 +190,31 @@
         addAppEventListeners();
     }
     
-    // --- EMAIL & APP LOGIC ---
-    function isValidEmail(email, allowGroups = true) { /* ... same as before ... */ }
-    function showError(message) { /* ... same as before ... */ }
-    async function markEmailAsRead(timestamp, element) { /* ... same as before ... */ }
-    function openEmail(msg, element) { /* ... same as before ... */ }
-    function clearReadingPane() { /* ... same as before ... */ }
-    function replyToEmail() { /* ... same as before ... */ }
-    function forwardEmail() { /* ... same as before ... */ }
-    function displayMessageInList(msg, container) { /* ... same as before ... */ }
-    async function performDelete() { /* ... same as before ... */ }
+    // --- EMAIL & APP LOGIC (These functions need to be fully implemented) ---
+    function isValidEmail(email, allowGroups = true) { /* ... */ }
+    function showError(message) { /* ... */ }
+    async function markEmailAsRead(timestamp, element) { /* ... */ }
+    function openEmail(msg, element) { /* ... */ }
+    function clearReadingPane() { /* ... */ }
+    function replyToEmail() { /* ... */ }
+    function forwardEmail() { /* ... */ }
+    function displayMessageInList(msg, container) { /* ... */ }
+    async function performDelete() { /* ... */ }
     function getEmployeeEmail() { return document.getElementById('employeeEmailInput').value.trim(); }
-    async function fetchMessages() { /* ... same as before ... */ }
-    async function sendMessage() { /* ... same as before ... */ }
-    function toggleView(view) { /* ... same as before ... */ }
+    async function fetchMessages() { /* ... */ }
+    async function sendMessage() { /* ... */ }
+    function toggleView(view) { /* ... */ }
 
     // --- EVENT LISTENERS ---
     function addAppEventListeners() {
         document.getElementById('logout-btn').addEventListener('click', logout);
         document.getElementById('new-message-btn').addEventListener('click', () => {
-            document.getElementById('recipientId').value = ''; document.getElementById('ccId').value = ''; document.getElementById('subject-input').value = ''; document.getElementById('message-input').value = '';
-            document.getElementById('compose-modal').classList.remove('hidden');
+            const composeModal = document.getElementById('compose-modal');
+            composeModal.querySelector('#recipientId').value = ''; 
+            composeModal.querySelector('#ccId').value = ''; 
+            composeModal.querySelector('#subject-input').value = ''; 
+            composeModal.querySelector('#message-input').value = '';
+            composeModal.classList.remove('hidden');
         });
         document.getElementById('close-compose-modal').addEventListener('click', () => document.getElementById('compose-modal').classList.add('hidden'));
         document.getElementById('send-button').addEventListener('click', sendMessage);
@@ -225,14 +230,23 @@
     discordLoginBtn.addEventListener('click', loginWithDiscord);
     createAccountBtn.addEventListener('click', createAccount);
 
-    window.addEventListener('storage', (event) => {
-        if (event.key === 'sadecUserEmail' && event.newValue) {
-            location.reload();
+    // This is the new listener for the popup window
+    window.addEventListener('message', (event) => {
+        // Security: Check if the message is from our script
+        if (event.origin !== "https://script.google.com") {
+            return;
         }
-        if (event.key === 'sadecRegistrationInfo' && event.newValue) {
-            const info = JSON.parse(event.newValue);
-            localStorage.removeItem('sadecRegistrationInfo');
-            showRegistrationScreen(info.discordId, info.discordUsername);
+
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'sadecLogin') {
+                localStorage.setItem('sadecUserEmail', data.email);
+                location.reload();
+            } else if (data.type === 'sadecRegistration') {
+                showRegistrationScreen(data.info.discordId, data.info.discordUsername);
+            }
+        } catch (e) {
+            console.error("Could not parse message from popup:", e);
         }
     });
 
@@ -243,14 +257,13 @@
 </html>
 ```
 
-### **Step 5 & 6 & 7: Deploy and Finalize**
+### **Final Steps: Re-Deploy Your Application**
 
-These steps are the same as before, but they are crucial. **You must re-deploy your script** for the changes to take effect.
+Because the code has changed, you **must re-deploy** your Google Apps Script project for the new logic to take effect.
 
 1.  **Deploy:** In the Apps Script editor, click **Deploy -> New deployment**. Select **"Web app"**, set access to **"Anyone"**, and click **Deploy**. Copy the new Web app URL.
-2.  **Update Script:** Paste the new URL into the `SCRIPT_URL` variable in your `Code.gs` file and save.
-3.  **Update HTML:** Paste the new URL into the `googleSheetWebAppUrl` variable in your `SADECEmail.html` file and save.
-4.  **Update Discord:** Go to the Discord Developer Portal, open your application's **OAuth2** page, and add the new Web app URL to the **Redirects** list. Save changes.
-5.  **Re-Deploy:** Because you changed the `SCRIPT_URL` in the script, you must deploy one last time. Go to **Deploy -> Manage deployments**, edit your deployment, select **"New version"**, and click **Deploy**.
+2.  **Update Script & HTML:** Paste the new URL into the `SCRIPT_URL` and `googleSheetWebAppUrl` variables in both your `Code.gs` and `SADECEmail.html` files. Save both files.
+3.  **Update Discord:** Go to the Discord Developer Portal, open your application's **OAuth2** page, and make sure the new Web app URL is in the **Redirects** list. Save changes.
+4.  **Re-Deploy (Final Time):** Because you updated the URL variable in the script, you must deploy one last time. Go to **Deploy -> Manage deployments**, edit your active deployment, select **"New version"**, and click **Deploy**.
 
-Your application is now fully updated. When you click "Sign In With Discord," it will open a new window for authentication, providing a much cleaner and more professional user experien
+After following these steps, your application hosted on GitHub Pages will now correctly handle the popup authentication fl
