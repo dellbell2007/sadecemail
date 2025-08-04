@@ -66,7 +66,7 @@
 
     <script>
     // --- STEP 3: PASTE YOUR WEB APP URL HERE ---
-    const googleSheetWebAppUrl = 'https://script.google.com/macros/s/AKfycbz7Rf1FabKY-b-MJWZt2WTLsgrp01h-VKueMloNsmZFLQ-hYVqVxq0s42e6aLH6Hgw/exec';
+    const googleSheetWebAppUrl = 'https://script.google.com/macros/s/AKfycbwCakOAH525s-tQfruR2gJe5C_qhszGDTqPdt7XvqNrq9Sy_6G6jRoD2B0TSlnSizjF/exec';
     
     // --- DO NOT EDIT BELOW THIS LINE ---
     
@@ -81,33 +81,52 @@
 
     // --- AUTHENTICATION & PAGE LOAD ---
     
-    function loginWithDiscord() {
+    async function loginWithDiscord() {
         // Clear any previous auth attempts
         localStorage.removeItem('sadecAuthPayload');
         
-        // Open the login URL in a new popup window
-        window.open(`${googleSheetWebAppUrl}?action=login`, 'discordLogin', 'width=500,height=800,noopener,noreferrer');
-        
-        // Start checking localStorage for the result from the popup
-        authCheckInterval = setInterval(checkForAuthResult, 1000);
+        try {
+            // Fetch the auth URL from the backend
+            const response = await fetch(`${googleSheetWebAppUrl}?action=getAuthUrl`);
+            const data = await response.json();
+
+            if (data.status === 'success' && data.url) {
+                // Open the URL provided by the script in a new popup window
+                window.open(data.url, 'discordLogin', 'width=500,height=800,noopener,noreferrer');
+                
+                // Start checking localStorage for the result from the popup
+                authCheckInterval = setInterval(checkForAuthResult, 1000);
+            } else {
+                alert('Could not retrieve login URL from the server. Please try again.');
+            }
+        } catch (error) {
+            console.error('Login Error:', error);
+            alert('Failed to contact the authentication server.');
+        }
     }
     
     function checkForAuthResult() {
-        const payloadString = localStorage.getItem('sadecAuthPayload');
-        if (payloadString) {
-            // Stop checking
+        try {
+            const payloadString = localStorage.getItem('sadecAuthPayload');
+            if (payloadString) {
+                // Stop checking
+                clearInterval(authCheckInterval);
+                localStorage.removeItem('sadecAuthPayload');
+
+                const payload = JSON.parse(payloadString);
+
+                if (payload.type === 'login') {
+                    loadingOverlay.classList.remove('hidden');
+                    loadingOverlay.classList.add('flex');
+                    exchangeTokenForEmail(payload.token);
+                } else if (payload.type === 'registration') {
+                    showRegistrationScreen(payload.regToken, payload.discordUsername);
+                }
+            }
+        } catch(e) {
+            console.error("Error processing auth result:", e);
             clearInterval(authCheckInterval);
             localStorage.removeItem('sadecAuthPayload');
-
-            const payload = JSON.parse(payloadString);
-
-            if (payload.type === 'login') {
-                loadingOverlay.classList.remove('hidden');
-                loadingOverlay.classList.add('flex');
-                exchangeTokenForEmail(payload.token);
-            } else if (payload.type === 'registration') {
-                showRegistrationScreen(payload.regToken, payload.discordUsername);
-            }
         }
     }
 
@@ -149,6 +168,7 @@
     }
 
     function showRegistrationScreen(regToken, discordUsername) {
+        loginOverlay.classList.add('hidden');
         createAccountOverlay.classList.remove('hidden');
         createAccountOverlay.classList.add('flex');
         document.getElementById('reg-token-input').value = regToken;
@@ -229,34 +249,15 @@
 </html>
 ```
 
-### **Final Steps: Re-Deploy and Configure**
+### **Final Steps: Re-Deploy Your Script**
 
-You must re-deploy your script for these changes to take effect.
+Because the logic in your Google Apps Script has changed, you **must re-deploy it**.
 
-1.  **Deploy the Script:**
-    * In your Google Apps Script project, click **Deploy -> New deployment**.
-    * Select **Type -> Web app**.
-    * Set **Execute as -> Me**.
-    * Set **Who has access -> Anyone**.
-    * Click **Deploy**.
-    * Copy the new **Web app URL**.
+1.  **Save** all changes in the Google Apps Script editor.
+2.  Click **Deploy -> Manage deployments**.
+3.  Click the **edit (pencil) icon** next to your active deployment.
+4.  From the **Version** dropdown, select **"New version"**.
+5.  Click **Deploy**.
+6.  Update your `SADECEmail.html` file on GitHub Pages with the new code from the Canvas above.
 
-2.  **Update URLs:**
-    * Paste the copied Web app URL into the `SCRIPT_URL` variable in your `Code.gs` file.
-    * Paste the same URL into the `googleSheetWebAppUrl` variable in your `SADECEmail.html` file.
-
-3.  **Update Discord Redirect URI:**
-    * Go to your Discord Developer Portal's **OAuth2** page.
-    * Ensure the **Redirects** list contains the new Web app URL you just copied.
-
-4.  **Re-Deploy the Script (Final Time):**
-    * Because you updated the `SCRIPT_URL` constant, you must deploy one last time.
-    * Go to **Deploy -> Manage deployments**.
-    * Click the **edit (pencil) icon**.
-    * Select **Version -> New version**.
-    * Click **Deploy**.
-
-5.  **Update Your GitHub Pages:**
-    * Push the updated `SADECEmail.html` file to your GitHub repository.
-
-This popup-based flow is the standard and most reliable way to handle cross-origin authentication and should now work as expect
+This updated flow is much more robust and should finally resolve the "refused to connect" error by ensuring your application opens the Discord URL direct
